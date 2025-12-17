@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Data files (contain market data, regenerated on run)
+data/*.csv
+data/*.db
+
+# Output files (generated daily)
+outputs/
+
+# Logs
+logs/
+*.log
+
+# Config with secrets
+config/config.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
