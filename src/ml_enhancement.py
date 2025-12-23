@@ -414,10 +414,30 @@ class SignalCombiner:
         else:
             final_direction = "NEUTRAL"
 
-        # Expected move
+        # Expected move - use GMI-based minimum when ML prediction is too small
         expected_move = ml_prediction.get('expected_return_pct', 0)
+
+        # Set minimum expected move based on GMI score
+        # Strong signals should have meaningful expected moves
+        gmi_min_moves = {
+            6: 0.75,  # GMI 6/6 = expect at least 0.75% move
+            5: 0.50,  # GMI 5/6 = expect at least 0.50% move
+            4: 0.30,  # GMI 4/6 = expect at least 0.30% move
+            3: 0.15,  # GMI 3/6 = neutral
+            2: 0.30,  # GMI 2/6 = expect down move
+            1: 0.50,  # GMI 1/6 = expect down move
+            0: 0.75,  # GMI 0/6 = expect at least 0.75% down
+        }
+        min_move = gmi_min_moves.get(gmi_score, 0.25)
+
+        # Use the larger of ML prediction or GMI minimum
+        if abs(expected_move) < min_move:
+            expected_move = min_move if final_direction == "UP" else -min_move
+
         if final_direction == "DOWN":
-            expected_move = -abs(expected_move) if expected_move > 0 else expected_move
+            expected_move = -abs(expected_move)
+        elif final_direction == "NEUTRAL":
+            expected_move = 0
 
         return {
             "final_direction": final_direction,

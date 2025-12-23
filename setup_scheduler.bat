@@ -12,8 +12,8 @@ set SCRIPT_DIR=%~dp0
 set PYTHON_SCRIPT=%SCRIPT_DIR%run_405.py
 
 REM Task details
-set TASK_NAME=QQQ_Options_Trading_405
-set TASK_TIME=16:05
+set TASK_NAME=QQQ_Options_Trading_410
+set TASK_TIME=16:10
 
 echo Creating scheduled task: %TASK_NAME%
 echo Script: %PYTHON_SCRIPT%
@@ -23,9 +23,9 @@ echo.
 REM Delete existing task if present
 schtasks /delete /tn "%TASK_NAME%" /f >nul 2>&1
 
-REM Create the task to run Monday through Friday at 4:30 PM
+REM Create the task to run Monday through Friday at 4:05 PM with visible window
 set PYTHON_EXE=C:\Users\rrose\AppData\Local\Programs\Python\Python312\python.exe
-schtasks /create /tn "%TASK_NAME%" /tr "\"%PYTHON_EXE%\" \"%PYTHON_SCRIPT%\"" /sc weekly /d MON,TUE,WED,THU,FRI /st %TASK_TIME% /f
+schtasks /create /tn "%TASK_NAME%" /tr "cmd /k cd /d %SCRIPT_DIR% && \"%PYTHON_EXE%\" \"%PYTHON_SCRIPT%\"" /sc weekly /d MON,TUE,WED,THU,FRI /st %TASK_TIME% /f
 
 if %ERRORLEVEL% EQU 0 (
     echo.

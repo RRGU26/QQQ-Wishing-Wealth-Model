@@ -81,11 +81,21 @@ class BreadthDataFetcher:
 
     def _fetch_yahoo_breadth(self) -> Optional[Dict]:
         """Fetch breadth data from Yahoo Finance special tickers."""
+        import io
+        import sys
+
         try:
+            # Suppress yfinance error output for these tickers (they often don't exist)
+            old_stderr = sys.stderr
+            sys.stderr = io.StringIO()
+
             # Yahoo has some market breadth tickers
             # ^NYHIGH - NYSE new highs, ^NYLOW - NYSE new lows
             highs_data = yf.download('^NYHIGH', period='5d', progress=False)
             lows_data = yf.download('^NYLOW', period='5d', progress=False)
+
+            # Restore stderr
+            sys.stderr = old_stderr
 
             if len(highs_data) > 0 and len(lows_data) > 0:
                 # Handle multi-index columns
@@ -105,6 +115,8 @@ class BreadthDataFetcher:
                     'timestamp': datetime.now().isoformat()
                 }
         except Exception as e:
+            # Restore stderr if exception occurred
+            sys.stderr = old_stderr
             pass  # Silently fail, try next source
 
         return None

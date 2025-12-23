@@ -316,7 +316,7 @@ class OptionsAnalyzer:
             lines.append("ACTION: NO TRADE")
             lines.append(f"REASON: {recommendation.reasoning}")
         else:
-            action_emoji = "📈 " if 'CALLS' in recommendation.action else "📉 "
+            action_emoji = ""  # Removed emoji for Windows console compatibility
             lines.append(f"ACTION: {action_emoji}{recommendation.action}")
             lines.append(f"STRIKE: ${recommendation.strike_recommended:.0f} ({recommendation.strike_type})")
             lines.append(f"EXPIRATION: {recommendation.expiration}")

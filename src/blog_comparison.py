@@ -81,16 +81,34 @@ class BlogComparison:
         return None
 
     def _extract_post_date(self, text: str) -> Optional[str]:
-        """Extract the blog post date."""
-        # Look for date patterns like "December 16, 2025" or "12/16/2025"
-        patterns = [
-            r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})',
-            r'(\d{1,2})/(\d{1,2})/(\d{4})',
-        ]
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                return match.group(0)
+        """Extract the blog post date - only match dates within last 7 days."""
+        from datetime import timedelta
+
+        text_start = text[:1500]
+        today = datetime.now()
+
+        # Month name to number mapping
+        month_map = {
+            'january': 1, 'february': 2, 'march': 3, 'april': 4,
+            'may': 5, 'june': 6, 'july': 7, 'august': 8,
+            'september': 9, 'october': 10, 'november': 11, 'december': 12
+        }
+
+        # Look for "Month Day, Year" pattern
+        pattern = r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})'
+        matches = re.findall(pattern, text_start, re.IGNORECASE)
+
+        for month_name, day, year in matches:
+            try:
+                month_num = month_map[month_name.lower()]
+                parsed_date = datetime(int(year), month_num, int(day))
+                # Only accept dates within the last 7 days
+                if (today - parsed_date).days <= 7 and (today - parsed_date).days >= 0:
+                    return f"{month_name} {day}, {year}"
+            except (ValueError, KeyError):
+                continue
+
+        # Fallback: return None rather than a stale date
         return None
 
     def _extract_gmi_signal(self, text: str) -> Optional[str]:
