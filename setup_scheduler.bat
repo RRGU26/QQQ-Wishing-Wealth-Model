@@ -9,7 +9,7 @@ echo.
 
 REM Get the directory of this batch file
 set SCRIPT_DIR=%~dp0
-set PYTHON_SCRIPT=%SCRIPT_DIR%run_405.py
+set PYTHON_SCRIPT=%SCRIPT_DIR%run_daily.py
 
 REM Task details
 set TASK_NAME=QQQ_Options_Trading_410
