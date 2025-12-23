@@ -1,9 +1,9 @@
 @echo off
-REM Batch script to set up Windows Task Scheduler for daily predictions
+REM Batch script to set up Windows Task Scheduler for daily reports
 REM Run this as Administrator
 
 echo ============================================================
-echo QQQ Wishing Wealth Model - Task Scheduler Setup
+echo Wishing Wealth Daily Report - Task Scheduler Setup
 echo ============================================================
 echo.
 
@@ -12,12 +12,12 @@ set SCRIPT_DIR=%~dp0
 set PYTHON_SCRIPT=%SCRIPT_DIR%run_daily.py
 
 REM Task details
-set TASK_NAME=QQQ_Options_Trading_410
+set TASK_NAME=Wishing_Wealth_Daily
 set TASK_TIME=16:10
 
 echo Creating scheduled task: %TASK_NAME%
 echo Script: %PYTHON_SCRIPT%
-echo Time: %TASK_TIME% (4:05 PM) on weekdays
+echo Time: %TASK_TIME% (4:10 PM) on weekdays
 echo.
 
 REM Delete existing task if present
@@ -33,7 +33,7 @@ if %ERRORLEVEL% EQU 0 (
     echo Task created successfully!
     echo ============================================================
     echo.
-    echo The model will run daily at 4:30 PM on weekdays.
+    echo The report will run daily at 4:10 PM on weekdays.
     echo.
     echo To test immediately:
     echo   schtasks /run /tn "%TASK_NAME%"
