@@ -206,8 +206,133 @@ def run_daily_report():
 
     # Stock Setups (if scanned)
     if setups is not None:
-        report = StockScreener().generate_report(setups, gmi_score)
-        print(report)
+        print("=" * 65)
+        print("STOCK SETUPS - ACTIONABLE TRADE IDEAS")
+        print("=" * 65)
+        print()
+
+        # GLB Section
+        print("-" * 65)
+        print("GLB (GREEN LINE BREAKOUT)")
+        print("-" * 65)
+        print()
+        print("  WHAT IT MEANS:")
+        print("    Stock breaking to NEW ALL-TIME HIGH after 3+ months of")
+        print("    consolidation. This is the classic breakout pattern.")
+        print()
+        print("  ACTION:")
+        print("    - BUY on breakout with volume confirmation")
+        print("    - Set stop-loss just below the breakout level (prior ATH)")
+        print("    - Target: Let winners run, trail stop with 10-week MA")
+        print()
+
+        if setups.get('GLB'):
+            print(f"  {'Symbol':<8} {'Price':>10} {'Score':>6} {'Above ATH':>12} {'Base Days':>12}")
+            print(f"  {'-'*56}")
+            for s in setups['GLB'][:5]:
+                print(
+                    f"  {s.symbol:<8} ${s.price:>9.2f} {s.score:>6}/10 "
+                    f"{s.details['breakout_pct']:>+11.1f}% {s.details['consolidation_days']:>12}"
+                )
+            print()
+            print(f"  >> TOP PICK: {setups['GLB'][0].symbol} - Breaking out {setups['GLB'][0].details['breakout_pct']:+.1f}% above prior high")
+        else:
+            print("  No GLB setups found today.")
+        print()
+
+        # Blue Dot Section
+        print("-" * 65)
+        print("BLUE DOT (OVERSOLD BOUNCE)")
+        print("-" * 65)
+        print()
+        print("  WHAT IT MEANS:")
+        print("    Stock pulled back to support (50 or 200-day MA) with")
+        print("    Stochastic oversold (<25). Bounce expected in uptrend.")
+        print()
+        print("  ACTION:")
+        print("    - BUY when Stochastic turns up from oversold")
+        print("    - Set stop-loss below the supporting MA")
+        print("    - Target: Prior swing high or +10-15%")
+        print()
+
+        if setups.get('BLUE_DOT'):
+            print(f"  {'Symbol':<8} {'Price':>10} {'Score':>6} {'Stoch':>8} {'vs MA50':>10} {'Off High':>10}")
+            print(f"  {'-'*60}")
+            for s in setups['BLUE_DOT'][:5]:
+                print(
+                    f"  {s.symbol:<8} ${s.price:>9.2f} {s.score:>6}/10 "
+                    f"{s.details['stochastic_k']:>7.0f} {s.details['pct_vs_ma50']:>+9.1f}% "
+                    f"{s.details['pct_off_high']:>9.1f}%"
+                )
+            print()
+            top_bd = setups['BLUE_DOT'][0]
+            print(f"  >> TOP PICK: {top_bd.symbol} - Stoch at {top_bd.details['stochastic_k']:.0f}, {top_bd.details['pct_off_high']:.0f}% off high")
+        else:
+            print("  No Blue Dot setups found today.")
+        print()
+
+        # RWB Section
+        print("-" * 65)
+        print("RWB (RED WHITE BLUE - TREND ALIGNED)")
+        print("-" * 65)
+        print()
+        print("  WHAT IT MEANS:")
+        print("    Moving averages perfectly aligned (10 > 30 > 50 > 100 > 200).")
+        print("    Stock is in a strong, steady uptrend.")
+        print()
+        print("  ACTION:")
+        print("    - BUY on pullback to 10 or 21-day MA")
+        print("    - Set stop-loss below 50-day MA")
+        print("    - Target: Hold as long as MA alignment persists")
+        print()
+
+        if setups.get('RWB'):
+            print(f"  {'Symbol':<8} {'Price':>10} {'Score':>6} {'Trend Str':>10} {'vs MA10':>10}")
+            print(f"  {'-'*52}")
+            for s in setups['RWB'][:5]:
+                print(
+                    f"  {s.symbol:<8} ${s.price:>9.2f} {s.score:>6}/10 "
+                    f"{s.details['ma_spread_pct']:>+9.1f}% {s.details['pct_above_ma10']:>+9.1f}%"
+                )
+            print()
+            top_rwb = setups['RWB'][0]
+            print(f"  >> TOP PICK: {top_rwb.symbol} - Strong trend, {top_rwb.details['pct_above_ma10']:+.1f}% above 10-day MA")
+        else:
+            print("  No RWB setups found today.")
+        print()
+
+        # Overall Recommendations
+        total_setups = sum(len(s) for s in setups.values())
+        print("=" * 65)
+        print("TODAY'S RECOMMENDATIONS")
+        print("=" * 65)
+        print()
+
+        if gmi_score >= 5:
+            print("  MARKET: GREEN LIGHT - Conditions favor new long entries")
+            print()
+            print("  PRIORITY ORDER:")
+            print("    1. GLB breakouts (highest conviction when GMI is green)")
+            print("    2. RWB pullbacks to 10/21-day MA")
+            print("    3. Blue Dot bounces for quick trades")
+            print()
+
+            if setups.get('GLB'):
+                print(f"  BEST OPPORTUNITY: {setups['GLB'][0].symbol} (GLB breakout)")
+            elif setups.get('RWB'):
+                # Find RWB with smallest pct_above_ma10 (best entry)
+                best_rwb = min(setups['RWB'][:5], key=lambda x: x.details['pct_above_ma10'])
+                print(f"  BEST OPPORTUNITY: {best_rwb.symbol} (RWB, closest to MA support)")
+            elif setups.get('BLUE_DOT'):
+                print(f"  BEST OPPORTUNITY: {setups['BLUE_DOT'][0].symbol} (Blue Dot bounce)")
+        else:
+            print("  MARKET: YELLOW/RED - Be cautious with new entries")
+            print()
+            print("  RECOMMENDATION:")
+            print("    - Wait for GMI to turn GREEN before adding positions")
+            print("    - If trading, use half position sizes")
+            print("    - Focus on Blue Dot bounces (lower risk)")
+        print()
 
     # Summary Box
     print()
