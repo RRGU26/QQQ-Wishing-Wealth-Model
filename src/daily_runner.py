@@ -24,6 +24,7 @@ import logging
 sys.path.insert(0, os.path.dirname(__file__))
 
 from qqq_wishing_wealth_model import QQQWishingWealthModel
+from breadth_data import BreadthDataFetcher
 
 
 class PredictionDatabase:
@@ -52,6 +53,10 @@ class PredictionDatabase:
                     confidence REAL,
                     gmi_score INTEGER,
                     gmi_signal TEXT,
+                    new_highs INTEGER,
+                    new_lows INTEGER,
+                    successful_nh INTEGER,
+                    t2108 REAL,
                     actual_price REAL,
                     actual_direction TEXT,
                     actual_move_pct REAL,
@@ -59,6 +64,24 @@ class PredictionDatabase:
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+
+            # Add breadth columns if they don't exist (for existing databases)
+            try:
+                conn.execute("ALTER TABLE predictions ADD COLUMN new_highs INTEGER")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            try:
+                conn.execute("ALTER TABLE predictions ADD COLUMN new_lows INTEGER")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE predictions ADD COLUMN successful_nh INTEGER")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE predictions ADD COLUMN t2108 REAL")
+            except sqlite3.OperationalError:
+                pass
 
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS daily_metrics (
@@ -75,13 +98,21 @@ class PredictionDatabase:
 
     def save_prediction(self, prediction: Dict):
         """Save a new prediction to the database."""
+        # Extract breadth data if available
+        breadth = prediction.get('breadth_data', {})
+        new_highs = breadth.get('new_highs_lows', {}).get('new_highs')
+        new_lows = breadth.get('new_highs_lows', {}).get('new_lows')
+        successful_nh = breadth.get('successful_new_high', {}).get('successful_count')
+        t2108 = breadth.get('t2108', {}).get('pct_above_200ma')
+
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 INSERT INTO predictions (
                     prediction_date, target_date, current_price,
                     predicted_direction, predicted_move_pct, confidence,
-                    gmi_score, gmi_signal
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    gmi_score, gmi_signal,
+                    new_highs, new_lows, successful_nh, t2108
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 prediction['as_of_date'],
                 prediction['prediction_for'],
@@ -90,7 +121,11 @@ class PredictionDatabase:
                 prediction['final_prediction']['expected_move_pct'],
                 prediction['final_prediction']['confidence'],
                 prediction['gmi']['score'],
-                prediction['gmi']['signal']
+                prediction['gmi']['signal'],
+                new_highs,
+                new_lows,
+                successful_nh,
+                t2108
             ))
             conn.commit()
 
@@ -464,9 +499,17 @@ class DailyRunner:
             results['steps'].append({'step': 'train', 'result': train_result})
             self.logger.info(f"Training result: {train_result.get('success', False)}")
 
-            # Step 4: Generate prediction
-            self.logger.info("Step 4: Generating prediction...")
-            prediction = self.model.predict()
+            # Step 4: Fetch market breadth data
+            self.logger.info("Step 4: Fetching market breadth data...")
+            breadth_fetcher = BreadthDataFetcher()
+            breadth_data = breadth_fetcher.get_all_breadth_data()
+            results['breadth_data'] = breadth_data
+            self.logger.info(f"Breadth: NH={breadth_data.get('new_highs_lows', {}).get('new_highs')}, T2108={breadth_data.get('t2108', {}).get('pct_above_200ma')}%")
+
+            # Step 5: Generate prediction with breadth data
+            self.logger.info("Step 5: Generating prediction...")
+            prediction = self.model.predict(breadth_data=breadth_data)
+            prediction['breadth_data'] = breadth_data  # Include in prediction for saving
             results['prediction'] = prediction
             self.logger.info(f"Prediction: {prediction['final_prediction']}")
 

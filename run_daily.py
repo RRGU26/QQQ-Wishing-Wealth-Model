@@ -158,8 +158,10 @@ def run_daily_report():
     if 'error' not in blog_data:
         print(f"  {'':15} {'Our Model':>15} {'Blog':>15}")
         print(f"  {'-'*45}")
-        print(f"  {'GMI Score':15} {gmi_score:>15} {blog_data.get('gmi_score', 'N/A'):>15}")
-        print(f"  {'Signal':15} {gmi_signal:>15} {blog_data.get('gmi_signal', 'N/A'):>15}")
+        blog_gmi = blog_data.get('gmi_score') if blog_data.get('gmi_score') is not None else 'N/A'
+        blog_signal = blog_data.get('gmi_signal') if blog_data.get('gmi_signal') is not None else 'N/A'
+        print(f"  {'GMI Score':15} {gmi_score:>15} {blog_gmi:>15}")
+        print(f"  {'Signal':15} {gmi_signal:>15} {blog_signal:>15}")
 
         if blog_data.get('qqq_trend_day'):
             print(f"  {'Trend Day':15} {'-':>15} {'Day ' + str(blog_data.get('qqq_trend_day')):>15}")
@@ -375,6 +377,46 @@ def run_daily_report():
     output_file = os.path.join(output_dir, f'daily_report_{timestamp}.txt')
 
     print(f"Report saved: {output_file}")
+
+    # Save JSON trading report for Markets agent consumption
+    import json
+    json_report = {
+        "timestamp": datetime.now().isoformat(),
+        "prediction": {
+            "as_of_date": prediction.get('as_of_date', ''),
+            "current_price": prediction.get('current_price', 0),
+            "target_price": prediction.get('target_price', 0),
+            "gmi_score": gmi_score,
+            "gmi_signal": gmi_signal,
+            "direction": prediction.get('direction', 'NEUTRAL'),
+            "confidence": prediction.get('confidence', 0.5),
+        },
+        "breadth_data": {
+            "new_highs": breadth_data.get('new_highs_lows', {}).get('new_highs', 0) if 'error' not in breadth_data else 0,
+            "new_lows": breadth_data.get('new_highs_lows', {}).get('new_lows', 0) if 'error' not in breadth_data else 0,
+            "successful_nh": breadth_data.get('successful_nh', {}).get('value', 0) if 'error' not in breadth_data else 0,
+            "t2108": breadth_data.get('t2108', {}).get('value', 50) if 'error' not in breadth_data else 50,
+        },
+    }
+
+    # Add setups if available
+    if setups:
+        json_report["setups"] = []
+        for pattern_type, setup_list in setups.items():
+            for s in setup_list[:5]:  # Top 5 per pattern
+                json_report["setups"].append({
+                    "symbol": s.symbol,
+                    "pattern": pattern_type,
+                    "entry": s.price,
+                    "stop": s.price * 0.95,  # Default 5% stop
+                    "target": s.price * 1.15,  # Default 15% target
+                    "risk_reward": 3.0,
+                })
+
+    json_file = os.path.join(output_dir, f'trading_report_{timestamp}.json')
+    with open(json_file, 'w') as f:
+        json.dump(json_report, f, indent=2)
+    print(f"JSON report saved: {json_file}")
 
     return prediction
 
